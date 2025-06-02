@@ -55,14 +55,23 @@ public class CommandService {
       throw new IllegalStateException("Cannot serialize command", e);
     }
 
+    Game game = unit.getGame();
+
+    CommandType commandType = switch (cmd) {
+      case MoveCommand mv -> mv.type();
+      case ShootCommand sh -> sh.type();
+      default -> throw new IllegalStateException("Unknown command type for: " + cmd);
+    };
+
     GameEvent event = new GameEvent(
-        unit.getGame(),
+        game,
         unit,
-        cmd.type(),        // CommandType
-        payload,           // JSON
-        true,              // success
+        commandType,
+        payload,
+        true,
         clock.instant()
     );
+
     eventRepo.save(event);
   }
 
@@ -70,10 +79,8 @@ public class CommandService {
   /**
    * Wykonuje ruch jednostki.
    * <p>
-   * Reguły: • Łucznik     – zawsze dokładnie 1 pole orthogonalnie.
-   * • Transport   – 1-3 pól orthogonalnie; niszczy przeciwnika, jeżeli stanie na jego polu. • Własnej jednostki nie wolno „najechać” –
-   * wtedy ruch jest anulowany, a cooldown mimo to liczy się normalnie.
-   * • Nie wolno wyjść poza planszę ani „przeskoczyć” nad żywą jednostką.
+   * Reguły: • Łucznik     – zawsze dokładnie 1 pole orthogonalnie. • Transport   – 1-3 pól orthogonalnie; niszczy przeciwnika, jeżeli stanie na jego polu. • Własnej jednostki nie wolno „najechać" –
+   * wtedy ruch jest anulowany, a cooldown mimo to liczy się normalnie. • Nie wolno wyjść poza planszę ani „przeskoczyć" nad żywą jednostką.
    */
   private void applyMove(Unit unit, MoveCommand cmd) {
 
@@ -110,7 +117,7 @@ public class CommandService {
     };
 
     /* Bierzemy kolejne pola po drodze, aby:
-       • nie „przeskakiwać” innych jednostek,
+       • nie „przeskakiwać" innych jednostek,
        • rozstrzygnąć kolizję z ostatnim polem. */
     int x = unit.getX();
     int y = unit.getY();
@@ -140,7 +147,7 @@ public class CommandService {
 
         /* Ostatnie pole – dwa scenariusze */
         if (other.getFaction() == unit.getFaction()) {
-          /* Próba najazdu na swoją jednostkę: ruch anulowany, ale cooldown już „poszedł”. */
+          /* Próba najazdu na swoją jednostkę: ruch anulowany, ale cooldown już „poszedł". */
           return;     // pozostajemy na miejscu
         } else {
           /* Najazd na przeciwnika – przeciwnik ginie, transport zajmuje pole. */
@@ -161,9 +168,8 @@ public class CommandService {
   /**
    * Wykonuje strzał jednostki.
    * <p>
-   * Reguły: • Archer strzela orthogonalnie (walidacja już w ShootCommand).
-   * • Cannon może także po skosie. • Jeśli w polu docelowym znajduje się dowolna żywa jednostka (własna lub cudza) – zostaje
-   * zniszczona. • Brak „przeszkód po drodze” – pocisk leci nad pustymi polami.
+   * Reguły: • Archer strzela orthogonalnie (walidacja już w ShootCommand). • Cannon może także po skosie. • Jeśli w polu docelowym znajduje się dowolna żywa jednostka (własna lub cudza) – zostaje
+   * zniszczona. • Brak „przeszkód po drodze" – pocisk leci nad pustymi polami.
    */
   private void applyShot(Unit unit, ShootCommand cmd) {
 

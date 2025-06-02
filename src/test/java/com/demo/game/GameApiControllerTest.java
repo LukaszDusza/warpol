@@ -58,20 +58,11 @@ class GameApiControllerTest {
   @DisplayName("createNewGame() zwraca 201 i deleguje do GameService")
   void shouldCreateNewGame() throws Exception {
     // language=json
-    String body = """
-          {
-            "boardWidth"  : 10,
-            "boardHeight" : 8,
-            "whiteConfig" : {},
-            "blackConfig" : {}
-          }
-        """;
-
     Game saved = new Game();
     saved.setId(1L);
     saved.setBoardWidth(10);
     saved.setBoardHeight(8);
-    saved.setStatus(GameStatus.NEW);   // dowolny istniejący status
+    saved.setStatus(GameStatus.NEW);
 
     given(gameService.createNewGame(anyInt(), anyInt(), any(), any()))
         .willReturn(saved);

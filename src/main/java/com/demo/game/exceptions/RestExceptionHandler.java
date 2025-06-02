@@ -3,6 +3,9 @@ package com.demo.game.exceptions;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.Hidden;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,16 +14,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Globalny <b>ControllerAdvice</b> mapujący wyjątki domenowe na kody HTTP.
  * <p>
- * • {@link IllegalArgumentException}        → 400  BadRequest<br>
- * • {@link org.springframework.data.crossstore.ChangeSetPersister.NotFoundException} → 404  NotFound<br>
- * • Walidacja beanów (JSR‑380)              → 422  UnprocessableEntity
+ * • {@link IllegalArgumentException}        → 400  BadRequest<br> • {@link org.springframework.data.crossstore.ChangeSetPersister.NotFoundException} → 404  NotFound<br> • Walidacja beanów (JSR‑380)
+ * → 422  UnprocessableEntity
  */
 @Slf4j
 @RestControllerAdvice
@@ -66,6 +64,20 @@ public class RestExceptionHandler {
   }
 
   /* -------------------------------------------------------------- */
+  /* 500 Internal Server Error – nieoczekiwane awarie               */
+  /* -------------------------------------------------------------- */
+
+  /**
+   * „Bezpieczna siatka” dla wszystkich nieobsłużonych wyjątków, w tym NullPointerException.
+   */
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ProblemJson> handleGeneric(Exception ex) {
+    log.error("500 Internal Server Error", ex);
+    return problem(HttpStatus.INTERNAL_SERVER_ERROR,
+        "Unexpected server error");
+  }
+
+  /* -------------------------------------------------------------- */
   /* Helper                                                          */
   /* -------------------------------------------------------------- */
 
@@ -89,6 +101,7 @@ public class RestExceptionHandler {
       @JsonFormat(shape = JsonFormat.Shape.STRING)
       Instant timestamp
   ) {
+
     public ProblemJson(int status, String message, Map<String, String> errors) {
       this(status, message, errors, Instant.now());
     }
